@@ -30,13 +30,14 @@ int onebyte_open(struct inode *inode, struct file *filep) {
 int onebyte_release(struct inode *inode, struct file *filep) {
 	return 0; // always successful
 }
-ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos) {
+ssize_t onebyte_read(struct file *filep, char *buf, size_t count,
+		loff_t *f_pos) {
 	/*please complete the function on your own*/
 	printk(KERN_ALERT "onebyte_read: %s\n", one_byte_data);
 	if (count == 0 || *f_pos > 0){
 		return 0;
 	}
-	rd = copy_to_user(buf, one_byte_data, sizeof(char));
+	int rd = copy_to_user(buf, one_byte_data, sizeof(char));
 	if (rd != 0){
 		return -ENOSPC;
 	}
@@ -46,6 +47,20 @@ ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 ssize_t onebyte_write(struct file *filep, const char *buf, size_t count,
 		loff_t *f_pos) {
 	/*please complete the function on your own*/
+	printk(KERN_ALERT "onebyte_write");
+	if (count == 0){
+		return 0;
+	}
+	if (*f_pos > 0){
+		return -ENOSPC;
+	}
+	int rd = copy_from_user(one_byte_data, buf, sizeof(char));
+	*f_pos += 1;
+	if (count > 0){
+		return -ENOSPC;
+	} else {
+		return 1;
+	}
 }
 
 static int onebyte_init(void) {
@@ -53,9 +68,8 @@ static int onebyte_init(void) {
 	// register the device
 	result = register_chrdev(MAJOR_NUMBER, "onebyte", &onebyte_fops);
 	if (result < 0) {
-
+		return result;
 	}
-	return result;
 	// allocate one byte of memory for storage
 	// kmalloc is just like malloc, the second parameter is
 	// the type of memory to be allocated.
